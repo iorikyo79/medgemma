@@ -1,0 +1,16 @@
+id,text
+1,"""65-year-old male presents with chest pain for 2 days. History of hypertension and smoking. ECG normal. Assessment: musculoskeletal chest pain. Plan: NSAIDs and outpatient follow-up."""
+2,"""45-year-old female with poorly controlled type 2 diabetes presents for routine follow-up. HbA1c elevated. Plan includes medication adjustment and dietary counseling."""
+3,"""72-year-old male admitted with shortness of breath and productive cough. Past history includes COPD. Chest X-ray shows infiltrates. Started on antibiotics."""
+4,"""30-year-old female presents with headache and nausea. No prior medical history. Neurological exam normal. Impression: migraine. Prescribed triptans."""
+5,"""60-year-old male with chronic kidney disease presents for lab review. Creatinine stable. Plan: continue current medications and monitor renal function."""
+6,""" 58-years-old female present with Intermittent palpitations and lightheadedness for 3 days; episodes last minutes. Relevant History:Hypertension; no prior arrhythmia. Plan:Assessment: Suspected supraventricular tachycardia; Plan: obtain ECG and ambulatory rhythm monitor; review antihypertensive regimen; arrange cardiology follow-up.
+"
+7,"""25-years-old male Acute right ankle pain after sports injury; swelling and difficulty weight-bearing. History: No chronic conditions; immunizations up to date.Assessment: Likely lateral ankle sprain; Plan: X‑ray to rule out fracture; RICE, immobilization as needed; physiotherapy referral and return precautions.
+"
+8,"""67-years-old male Sudden transient left arm weakness lasting 20 minutes, resolved on arrival. History:Atrial fibrillation; on anticoagulation with recent INR within target, plan & Assessment: Transient ischemic attack; Plan: urgent neuroimaging and carotid Doppler; optimize anticoagulation and vascular risk factors; neurology referral.
+"
+9,"50-years-old female Chronic heartburn and regurgitation, worse after meals and at night. History:Overweight; occasional NSAID use.Assessment: Gastroesophageal reflux disease suspected; Plan: trial of lifestyle modification and proton pump inhibitor; consider endoscopy if alarm features or no response.
+"
+10,"80-years-old male Fatigue and decreased appetite over 6 weeks; routine labs show low hemoglobin. History : Chronic osteoarthritis; no recent bleeding reported.Assessment: Unexplained anemia; Plan: repeat CBC and iron studies; evaluate for occult blood loss and nutritional causes; coordinate with geriatrics for comprehensive assessment.
+"
