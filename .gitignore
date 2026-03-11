@@ -37,3 +37,5 @@ training.log
 __pycache__/
 *.py[cod]
 *.pyo
+
+*.tar.gz

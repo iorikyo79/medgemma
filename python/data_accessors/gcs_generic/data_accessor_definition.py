@@ -16,7 +16,8 @@
 
 import dataclasses
 import json
-from typing import Any, Mapping, Never, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
+from typing_extensions import Never
 
 from ez_wsi_dicomweb import credential_factory as credential_factory_module
 import google.cloud.storage
