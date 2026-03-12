@@ -15,6 +15,30 @@
 
 ---
 
+## 이미지 버전 관리 가이드 (Tip!)
+
+도커 이미지를 빌드하실 때 `latest` 대신 지속적으로 버전 태그를 지정하여 버전을 관리하는 방법을 권장합니다:
+
+1. **시맨틱 버저닝 (수동)**: 운영 단계에 명확히 구분된 버전 부여
+   ```bash
+   docker build -t medgemma-serving:v1.0.0 .
+   docker build -t medgemma-serving:v1.0.1 .
+   ```
+2. **날짜/시간 기반 (자동)**: 빌드한 시간으로 구분 (개발 중 권장)
+   ```bash
+   docker build -t medgemma-serving:$(date +%Y%m%d) .
+   # 결과: medgemma-serving:20240312
+   ```
+3. **Git 커밋 해시 (자동)**: 소스코드 버전과 정확히 일치시키는 방법
+   ```bash
+   docker build -t medgemma-serving:$(git rev-parse --short HEAD) .
+   # 결과: medgemma-serving:a1b2c3d
+   ```
+
+*이 가이드 문서 내의 명령어들은 예시로 `v1.0.0` 태그를 기준으로 작성되어 있습니다. 필요에 따라 원하는 버전 태그명(예: 저장한 날짜)으로 치환해서 사용하시면 됩니다.*
+
+---
+
 ## 사전 요구사항
 
 ### 빌드 서버 (이미지 생성)
@@ -84,8 +108,8 @@ medgemma/
 # 프로젝트 루트 디렉토리로 이동
 cd /path/to/medgemma
 
-# 도커 이미지 빌드 (약 15-30분 소요)
-docker build -f python/serving/Dockerfile -t medgemma-serving:latest .
+# 도커 이미지 빌드 (버전 태그 지정, 예: v1.0.0)
+docker build -f python/serving/Dockerfile -t medgemma-serving:v1.0.0 .
 
 # 빌드 완료 후 이미지 확인
 docker images | grep medgemma
@@ -96,7 +120,7 @@ docker images | grep medgemma
 | 옵션 | 설명 |
 |------|------|
 | `-f python/serving/Dockerfile` | Dockerfile 경로 지정 |
-| `-t medgemma-serving:latest` | 이미지 이름 및 태그 |
+| `-t medgemma-serving:v1.0.0` | 이미지 이름 및 태그 (버전 정보 포함) |
 | `--no-cache` | 캐시 없이 처음부터 빌드 (문제 발생 시) |
 | `--progress=plain` | 빌드 과정 자세히 보기 |
 
@@ -108,10 +132,10 @@ docker images | grep medgemma
 
 ```bash
 # 이미지를 tar.gz 파일로 압축 저장 (약 10-15분 소요)
-docker save medgemma-serving:latest | gzip > medgemma-serving.tar.gz
+docker save medgemma-serving:v1.0.0 | gzip > medgemma-serving_v1.0.0.tar.gz
 
 # 파일 크기 확인
-ls -lh medgemma-serving.tar.gz
+ls -lh medgemma-serving_v1.0.0.tar.gz
 # 예상 크기: 약 10-12GB
 ```
 
@@ -119,7 +143,7 @@ ls -lh medgemma-serving.tar.gz
 
 ```bash
 # 압축 없이 저장 (더 빠름, 파일 크기 큼)
-docker save medgemma-serving:latest -o medgemma-serving.tar
+docker save medgemma-serving:v1.0.0 -o medgemma-serving_v1.0.0.tar
 ```
 
 ### 외부 서버로 전송
@@ -128,27 +152,27 @@ docker save medgemma-serving:latest -o medgemma-serving.tar
 
 ```bash
 # 로컬에서 원격 서버로 전송
-scp medgemma-serving.tar.gz user@remote-server:/path/to/destination/
+scp medgemma-serving_v1.0.0.tar.gz user@remote-server:/path/to/destination/
 
 # 또는 rsync 사용 (대용량 권장, 중단되어도 이어서 전송)
-rsync -avz --progress medgemma-serving.tar.gz user@remote-server:/path/to/destination/
+rsync -avz --progress medgemma-serving_v1.0.0.tar.gz user@remote-server:/path/to/destination/
 ```
 
 #### S3/GS 사용 (클라우드)
 
 ```bash
 # AWS S3
-aws s3 cp medgemma-serving.tar.gz s3://your-bucket/
+aws s3 cp medgemma-serving_v1.0.0.tar.gz s3://your-bucket/
 
 # Google Cloud Storage
-gsutil cp medgemma-serving.tar.gz gs://your-bucket/
+gsutil cp medgemma-serving_v1.0.0.tar.gz gs://your-bucket/
 ```
 
 #### 물리적 전송
 
 ```bash
 # USB 등에 복사하여 전달
-cp medgemma-serving.tar.gz /path/to/usb/
+cp medgemma-serving_v1.0.0.tar.gz /path/to/usb/
 ```
 
 ---
@@ -159,10 +183,10 @@ cp medgemma-serving.tar.gz /path/to/usb/
 
 ```bash
 # 압축된 이미지 로드
-docker load < medgemma-serving.tar.gz
+docker load < medgemma-serving_v1.0.0.tar.gz
 
 # 또는 gunzip 후 로드
-gunzip -c medgemma-serving.tar.gz | docker load
+gunzip -c medgemma-serving_v1.0.0.tar.gz | docker load
 
 # 로드 확인
 docker images | grep medgemma
@@ -175,9 +199,13 @@ docker images | grep medgemma
 docker run -d \
   --name medgemma-server \
   --gpus all \
+  -e AIP_HTTP_PORT=8080 \
   -p 8080:8080 \
-  --shm-size=16g \
-  medgemma-serving:latest
+  --shm-size=32g \
+  medgemma-serving:v1.0.0 \
+  --max-model-len=4096 \
+  --gpu-memory-utilization=0.9 \
+  --disable-log-stats
 
 # 실행 확인
 docker ps | grep medgemma
@@ -191,8 +219,9 @@ docker ps | grep medgemma
 | `--name medgemma-server` | 컨테이너 이름 지정 |
 | `--gpus all` | 모든 GPU 사용 |
 | `--gpus '"device=0"'` | 특정 GPU만 사용 (GPU ID 0) |
+| `-e AIP_HTTP_PORT=8080` | (필수) 컨테이너 내부 웹 서버 포트 설정 |
 | `-p 8080:8080` | 포트 포워딩 (호스트:컨테이너) |
-| `--shm-size=16g` | 공유 메모리 크기 |
+| `--shm-size=32g` | 공유 메모리 크기 (모델 크기에 따라 조절, 다중 요청 시 여유 있게 설정) |
 | `--restart always` | 시스템 재부팅 시 자동 시작 |
 | `-v /host/path:/container/path` | 볼륨 마운트 |
 
@@ -203,17 +232,19 @@ docker ps | grep medgemma
 docker run -d \
   --name medgemma-server \
   --gpus '"device=2"' \
+  -e AIP_HTTP_PORT=8080 \
   -p 8080:8080 \
   --shm-size=16g \
-  medgemma-serving:latest
+  medgemma-serving:v1.0.0
 
 # GPU ID 0,1 사용
 docker run -d \
   --name medgemma-server \
   --gpus '"device=0,1"' \
+  -e AIP_HTTP_PORT=8080 \
   -p 8080:8080 \
   --shm-size=16g \
-  medgemma-serving:latest
+  medgemma-serving:v1.0.0
 ```
 
 ---
@@ -282,7 +313,7 @@ docker stop medgemma-server
 docker rm medgemma-server
 
 # 이미지 삭제
-docker rmi medgemma-serving:latest
+docker rmi medgemma-serving:v1.0.0
 ```
 
 ---
@@ -331,8 +362,9 @@ nvidia-smi
 docker run -d \
   --name medgemma-server \
   --gpus '"device=1"' \
+  -e AIP_HTTP_PORT=8080 \
   -p 8080:8080 \
-  medgemma-serving:latest
+  medgemma-serving:v1.0.0
 ```
 
 #### "Port 8080 already in use"
@@ -344,8 +376,9 @@ sudo lsof -i :8080
 docker run -d \
   --name medgemma-server \
   --gpus all \
+  -e AIP_HTTP_PORT=8080 \
   -p 8081:8080 \
-  medgemma-serving:latest
+  medgemma-serving:v1.0.0
 ```
 
 ### 서버 응답 없음

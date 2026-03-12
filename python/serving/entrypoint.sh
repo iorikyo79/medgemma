@@ -37,6 +37,15 @@ export MODEL_REST_PORT=8600
 # VLLM v1 engine is not yet compatible with gemma, use v0 instead.
 export VLLM_USE_V1=0
 
+# Set default values for Vertex AI environment variables if not provided
+export AIP_HTTP_PORT="${AIP_HTTP_PORT:-8080}"
+export AIP_HEALTH_ROUTE="${AIP_HEALTH_ROUTE:-/health}"
+export AIP_PREDICT_ROUTE="${AIP_PREDICT_ROUTE:-/predict}"
+
+# Disable Cloud Logging by default for local execution
+export ENABLE_CLOUD_LOGGING="${ENABLE_CLOUD_LOGGING:-false}"
+export CLOUD_OPS_LOG_PROJECT="${CLOUD_OPS_LOG_PROJECT:-local}"
+
 # If the GCS model source is provided as an environment variable, inject it
 # so that the model will be obtained from there.
 if [[ -v "MODEL_SOURCE" ]]; then
@@ -53,6 +62,8 @@ if [[ -v "AIP_STORAGE_URI" && -n "$AIP_STORAGE_URI" ]]; then
   fi
   mkdir "$MODEL_FILES"
   gcloud storage cp "$AIP_STORAGE_URI/*" "$MODEL_FILES" --recursive
+elif [[ -d "/serving/models/medgemma-4b-it" ]]; then
+  export MODEL_FILES="/serving/models/medgemma-4b-it"
 fi
 
 echo "Constructing model configuration"
@@ -79,8 +90,20 @@ echo "Serving framework start, launching model server"
 
 echo "Launching front end"
 
+HF_MODEL_ARG=""
+if [[ -z "${MODEL_FILES:-}" ]]; then
+  HF_MODEL="google/medgemma-4b-it"
+  for arg in "$@"; do
+    if [[ "$arg" == --model-name=* ]]; then
+      HF_MODEL="${arg#*=}"
+    fi
+  done
+  HF_MODEL_ARG="--hf_model=${HF_MODEL}"
+fi
+
 (/server-env/bin/python3.12 -m serving.server_gunicorn --alsologtostderr \
     --verbosity=1 ${MODEL_FILES:+"--local_model_path=${MODEL_FILES}"} \
+    ${HF_MODEL_ARG} \
     || exit)&
 
 # Wait for any process to exit

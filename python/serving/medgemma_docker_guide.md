@@ -50,12 +50,12 @@ graph TD
 이미지를 만드는 것은 코드를 실행하는 것이 아니라, 앞으로 **언제 어디서든 똑같이 실행될 "얼음" 상태를 얼리는 것**입니다.
 
 ```bash
-# 도커 이미지(얼음)를 생성하는 마법의 명령어
-docker build -f python/serving/Dockerfile -t medgemma-serving:latest .
+# 도커 이미지(얼음)를 생성하는 마법의 명령어 (버전 태그 지정)
+docker build -f python/serving/Dockerfile -t medgemma-serving:v1.0.0 .
 ```
 
 * `-f python/serving/Dockerfile`: **"이 레시피를 보고 요리해 줘"** 라는 뜻입니다. 이 파일 안에는 "우분투 OS를 깔고 ➔ 파이썬을 깔고 ➔ Medgemma 코드를 복사하고 ➔ 필수 라이브러리를 설치해라" 라는 설계도가 들어있습니다.
-* `-t medgemma-serving:latest`: 만들어질 이미지에 **이름표(태그)**를 붙입니다. `이름:버전` 형식입니다.
+* `-t medgemma-serving:v1.0.0`: 만들어질 이미지에 **이름표(태그)**를 붙입니다. `이름:버전` 형식입니다. 실무에서는 `latest`보다 `v1.0.0` 같은 구체적 버전을 부여해야 버전 관리가 가능합니다.
 * `.` (맨 끝의 점): **"지금 내가 있는 이 폴더의 모든 재료(코드, 모델 파일 등)를 도커에게 넘겨줄게"**라는 뜻입니다. 이것을 '빌드 컨텍스트'라고 부릅니다.
 
 ### [3단계] 이미지 추출 및 전송 (`docker save` & `scp`)
@@ -67,7 +67,7 @@ docker build -f python/serving/Dockerfile -t medgemma-serving:latest .
 > 사내 보안망이나 클라우드 비용 문제, 혹은 수 기가바이트(GB)에 달하는 모델 파일이 포함된 대용량 이미지의 경우, 직접 `tar` 파일로 구워서 복사(`scp` 매뉴얼 전송 등)하는 것이 더 직관적이고 네트워크 환경의 제약을 적게 받기 때문입니다.
 
 ```bash
-docker save medgemma-serving:latest | gzip > medgemma-serving.tar.gz
+docker save medgemma-serving:v1.0.0 | gzip > medgemma-serving_v1.0.0.tar.gz
 ```
 "이 이름표를 가진 도커 이미지를 꺼내서 ➔ 압축해서 ➔ `.tar.gz` 파일로 내보내 줘" 라는 직관적인 구조입니다. 이제 이 파일을 USB에 담거나, `scp`로 다른 서버에 던져주면 됩니다.
 
@@ -79,9 +79,10 @@ docker save medgemma-serving:latest | gzip > medgemma-serving.tar.gz
 docker run -d \
   --name medgemma-server \
   --gpus all \
+  -e AIP_HTTP_PORT=8080 \
   -p 8080:8080 \
   --shm-size=16g \
-  medgemma-serving:latest
+  medgemma-serving:v1.0.0
 ```
 
 이 엄청난 길이의 옵션들이 컨테이너에 물리적으로 어떤 제어를 가하는지 분해해보면 다음과 같습니다:
@@ -91,7 +92,7 @@ docker run -d \
 3. `--gpus all`: 앞서 1단계에서 뚫어놓은 **통로를 개방**합니다. "이 컨테이너는 호스트의 모든 GPU에 접근할 권한을 준다"는 뜻입니다. 특정 GPU만 원하면 `"device=0"` 처럼 통계를 제한할 수 있습니다.
 4. `-p 8080:8080` (Port): **문과 벽 부수기**. `호스트포트:컨테이너포트` 입니다. 외부에서 이 서버의 `8080` 포트로 접속하면, 완전히 대역이 차단된 컨테이너 내부의 `8080` 빈틈으로 트래픽을 토스해 주라는 뜻입니다. 이 구멍이 없으면 밖에서 서버를 호출(`curl`)할 수 없습니다.
 5. `--shm-size=16g`: 공유 메모리(Shared Memory) 크기입니다. AI 모델, 특히 병렬 처리가 많은 경우 도커의 기본 메모리 설정(보통 64MB)으로는 턱없이 부족하여 프로그램이 뻗어버립니다. 이를 16GB로 강제 확장하는 옵션입니다.
-6. `medgemma-serving:latest`: **어떤 이미지를 원본으로 할 건지** 지정하는 마지막 목적어입니다.
+6. `medgemma-serving:v1.0.0`: **어떤 이미지를 원본으로 할 건지** 지정하는 마지막 목적어입니다.
 
 ### [5단계] 동작 테스트 및 모니터링
 
