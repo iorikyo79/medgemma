@@ -158,11 +158,21 @@ nvidia-smi  # CUDA 버전 확인
 ```
 
 ### 모델 로딩 오류
-모델 경로가 올바른지 확인하세요:
+모델 경로가 올바른지 확인하세요. `simple_serving.py`는 스크립트 위치 기준 상대 경로 (`./models/medgemma-4b-it`)를 사용합니다:
 ```bash
-ls /home/jkuhm/src/MoltsBot-Source/medgemma-clone/medgemma/challenge/models/medgemma-4b-it
+ls python/serving/models/medgemma-4b-it
 ```
 
 ## 서버 중지
 
 터미널에서 `Ctrl+C`를 누르세요.
+
+## 관련 문서
+
+| 문서 | 설명 |
+|------|------|
+| [DOCKER_DEPLOYMENT.md](./DOCKER_DEPLOYMENT.md) | Docker 이미지 빌드 및 배포 가이드 (프로덕션 권장) |
+| [LOCAL_SERVING_GUIDE.md](./LOCAL_SERVING_GUIDE.md) | Triton + Gunicorn 스택 로컬 서빙 가이드 |
+| [medgemma_docker_guide.md](./medgemma_docker_guide.md) | Docker 초보자를 위한 입문 가이드 |
+
+> **참고**: 이 Simple Serving은 빠른 개발/테스트 용도입니다. 프로덕션 환경이나 동시 요청 처리가 필요한 경우 Docker 기반 서빙(vLLM + Triton)을 권장합니다.
